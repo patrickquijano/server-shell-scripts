@@ -25,10 +25,10 @@ A collection of shell scripts for provisioning and configuring Red Hat Enterpris
 Run a script directly from the repository without cloning it first:
 
 ```bash
-# Install Docker CE
-curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-docker.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-docker.sh | sudo bash -s -- <username>
+```
 
-# Configure automatic system updates
+```bash
 curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-dnf-automatic.sh | sudo bash
 ```
 
@@ -44,22 +44,23 @@ Installs Docker CE and related tooling on a RHEL system with a production-ready 
 
 **What it does:**
 
+- Validates that a `<username>` argument is provided and that the user exists on the system
 - Updates and upgrades all system packages via `dnf`
-- Adds Docker's official RHEL repository
-- Installs `docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-buildx-plugin`, and `docker-compose-plugin`
-- Enables and starts the Docker systemd service
-- Creates the `docker` group and adds the current user to it
-- Installs `container-selinux` for SELinux compatibility
-- Writes `/etc/docker/daemon.json` with:
+- Installs `dnf-plugins-core` and adds Docker's official RHEL repository
+- Installs `docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-buildx-plugin`, `docker-compose-plugin`, and `container-selinux`
+- Creates the `docker` group if it does not already exist, and adds the specified user to it
+- Writes `/etc/docker/daemon.json` — prompts before overwriting if the file already exists — with:
   - `systemd` cgroup driver
   - JSON file logging with 10 MB max size and 3-file rotation
-- Reloads systemd and restarts Docker
-- Validates the installation by running the `hello-world` container
+- Enables and starts the `docker` systemd service if it is not already running
+- Enables and starts the `containerd` systemd service if it is not already running
 
 **Usage:**
 
 ```bash
-sudo bash scripts/rhel/setup-docker.sh
+sudo bash scripts/rhel/setup-docker.sh <username>
+# Example:
+sudo bash scripts/rhel/setup-docker.sh azureuser
 ```
 
 ---
@@ -88,7 +89,8 @@ sudo bash scripts/rhel/setup-dnf-automatic.sh
 ## Notes
 
 - **Both scripts are independent and complementary.** Run both to get a fully configured Docker host with automatic system updates.
-- **Docker group membership** — `setup-docker.sh` adds the current user to the `docker` group so Docker commands can be run without `sudo`. You may need to log out and back in for this to take effect in new terminal sessions.
+- **Docker group membership** — `setup-docker.sh` accepts a required `<username>` argument and adds that user to the `docker` group so Docker commands can be run without `sudo`. You may need to log out and back in for this to take effect in new terminal sessions.
+- **daemon.json prompt** — if `/etc/docker/daemon.json` already exists when `setup-docker.sh` is run, the script will display the current contents and ask whether to overwrite it. Answering `N` skips the update and leaves the existing configuration in place.
 - **System update on every run** — both scripts begin with a full `dnf update && dnf upgrade`, so they may take several minutes on a freshly provisioned system.
 
 ## License
