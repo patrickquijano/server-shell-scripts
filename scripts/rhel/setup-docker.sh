@@ -12,14 +12,6 @@ sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 # Enable and start the Docker service
 sudo systemctl enable --now docker
 
-# Install dnf-automatic for automatic updates and configure it to apply updates automatically
-sudo dnf -y install dnf-automatic
-sudo sed -i 's/^upgrade_type = .*/upgrade_type = default/' /etc/dnf/automatic.conf
-sudo sed -i 's/^apply_updates = .*/apply_updates = yes/' /etc/dnf/automatic.conf
-
-# Enable and start the dnf-automatic timer to run daily
-sudo systemctl enable --now dnf-automatic.timer
-
 # Add the azureuser to the docker group to run Docker without sudo
 if ! getent group docker; then
   sudo groupadd docker
@@ -27,6 +19,9 @@ fi
 
 # Add the current user to the docker group
 sudo usermod -aG docker $USER
+
+# Apply the new group membership without logging out
+newgrp docker
 
 # Install SELinux policy for Docker
 sudo dnf -y install container-selinux
