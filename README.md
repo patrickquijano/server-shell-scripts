@@ -11,7 +11,8 @@ A collection of shell scripts for provisioning and configuring Red Hat Enterpris
 - [Scripts](#scripts)
   - [setup-docker.sh](#setup-dockersh)
   - [setup-dnf-automatic.sh](#setup-dnf-automaticsh)
-  - [setup-disk.sh](#setup-disksh)
+  - [setup-new-disk.sh](#setup-new-disksh)
+  - [setup-existing-disk.sh](#setup-existing-disksh)
 - [Notes](#notes)
 - [License](#license)
 
@@ -87,9 +88,9 @@ sudo bash scripts/rhel/setup-dnf-automatic.sh
 
 ---
 
-### setup-disk.sh
+### setup-new-disk.sh
 
-**Location:** `scripts/rhel/setup-disk.sh`
+**Location:** `scripts/rhel/setup-new-disk.sh`
 
 Identifies unpartitioned disks, prompts to select one, creates a single XFS partition on a GPT partition table, mounts it at a user-specified path, and writes a UUID-based `/etc/fstab` entry so the mount persists across reboots.
 
@@ -107,14 +108,45 @@ Identifies unpartitioned disks, prompts to select one, creates a single XFS part
 **Usage:**
 
 ```bash
-sudo sh scripts/rhel/setup-disk.sh
+sudo sh scripts/rhel/setup-new-disk.sh
 ```
 
 > **Note:** This script is fully interactive — it reads from the terminal. Piping it from `curl` will break the prompts. Download it first, then run it:
 >
 > ```bash
-> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-disk.sh -o /tmp/setup-disk.sh
-> sudo sh /tmp/setup-disk.sh
+> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-new-disk.sh -o /tmp/setup-new-disk.sh
+> sudo sh /tmp/setup-new-disk.sh
+> ```
+
+---
+
+### setup-existing-disk.sh
+
+**Location:** `scripts/rhel/setup-existing-disk.sh`
+
+Identifies existing partitions that already have filesystems but are not currently mounted, prompts to select one, mounts it at a user-specified path, and writes a UUID-based `/etc/fstab` entry so the mount persists across reboots.
+
+**What it does:**
+
+- Detects unmounted partitions where a filesystem already exists (no partitioning or formatting)
+- Prompts to select one partition and validates the input
+- Prompts for an absolute mount point path and validates it is not already in use
+- Aborts if `/etc/fstab` already contains an entry for the selected partition UUID, device path, or mount point
+- Displays a summary and requires explicit `[y/N]` confirmation before mounting
+- Creates the mount point directory, mounts the partition, and appends a UUID-based entry to `/etc/fstab`
+- Displays `lsblk`, `df -h`, and the fstab entry to confirm success
+
+**Usage:**
+
+```bash
+sudo sh scripts/rhel/setup-existing-disk.sh
+```
+
+> **Note:** This script is fully interactive — it reads from the terminal. Piping it from `curl` will break the prompts. Download it first, then run it:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-existing-disk.sh -o /tmp/setup-existing-disk.sh
+> sudo sh /tmp/setup-existing-disk.sh
 > ```
 
 ## Notes

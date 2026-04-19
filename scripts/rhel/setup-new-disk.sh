@@ -2,7 +2,7 @@
 # Prompts to select an unpartitioned disk, creates a GPT partition with XFS
 # filesystem, mounts it at a user-specified path, and adds a fstab entry for
 # persistence across reboots.
-# Usage: sudo sh setup-disk.sh
+# Usage: sudo sh setup-new-disk.sh
 
 set -e
 
