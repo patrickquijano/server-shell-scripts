@@ -4,6 +4,12 @@
 
 set -e
 
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Error: this script must be run as root (use sudo)" >&2
+  exit 1
+fi
+
 # Check if a username argument is provided
 if [ "$#" -lt 1 ]; then
   echo "Usage: $(basename "$0") <username>"

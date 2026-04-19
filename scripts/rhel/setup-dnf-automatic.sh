@@ -2,6 +2,12 @@
 
 set -e
 
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Error: this script must be run as root (use sudo)" >&2
+  exit 1
+fi
+
 # Update and upgrade the system
 dnf -y update
 dnf -y upgrade

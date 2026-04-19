@@ -6,6 +6,12 @@
 
 set -e
 
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Error: this script must be run as root (use sudo)" >&2
+  exit 1
+fi
+
 # Create a temporary file to store the list of unpartitioned disks
 DISK_LIST=$(mktemp)
 trap 'rm -f "$DISK_LIST"' EXIT
