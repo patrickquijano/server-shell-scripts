@@ -21,21 +21,21 @@ if ! id "$TARGET_USER" >/dev/null 2>&1; then
 fi
 
 # Update and upgrade the system
-sudo dnf -y update
-sudo dnf -y upgrade
+dnf -y update
+dnf -y upgrade
 
 # Install Docker CE and related packages
-sudo dnf -y install dnf-plugins-core
-sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin container-selinux
+dnf -y install dnf-plugins-core
+dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin container-selinux
 
 # Add the docker group if it does not exist
 if ! getent group docker >/dev/null 2>&1; then
-  sudo groupadd docker
+  groupadd docker
 fi
 
 # Add the specified user to the docker group
-sudo usermod -aG docker "$TARGET_USER"
+usermod -aG docker "$TARGET_USER"
 
 # Check the current contents of /etc/docker/daemon.json and prompt the user to replace it if it already exists
 if [ -f /etc/docker/daemon.json ]; then
@@ -45,7 +45,7 @@ if [ -f /etc/docker/daemon.json ]; then
   read -r reply
   case "$reply" in
   [Yy])
-    sudo tee /etc/docker/daemon.json >/dev/null <<EOF
+    tee /etc/docker/daemon.json >/dev/null <<EOF
 {
   "exec-opts": [
     "native.cgroupdriver=systemd"
@@ -63,7 +63,7 @@ EOF
     ;;
   esac
 else
-  sudo tee /etc/docker/daemon.json >/dev/null <<EOF
+  tee /etc/docker/daemon.json >/dev/null <<EOF
 {
   "exec-opts": [
     "native.cgroupdriver=systemd"
@@ -78,8 +78,8 @@ EOF
 fi
 
 # Enable and start Docker service
-sudo systemctl enable --now docker
-if sudo systemctl is-active --quiet docker; then
+systemctl enable --now docker
+if systemctl is-active --quiet docker; then
   echo "Docker service is enabled and running"
 else
   echo "Failed to start Docker service" >&2
@@ -87,8 +87,8 @@ else
 fi
 
 # Enable and start containerd service
-sudo systemctl enable --now containerd
-if sudo systemctl is-active --quiet containerd; then
+systemctl enable --now containerd
+if systemctl is-active --quiet containerd; then
   echo "containerd service is enabled and running"
 else
   echo "Failed to start containerd service" >&2

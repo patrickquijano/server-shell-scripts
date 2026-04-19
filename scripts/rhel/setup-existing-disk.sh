@@ -2,7 +2,7 @@
 # Prompts to select a partition that already has a filesystem but is not
 # currently mounted, mounts it at a user-specified path, and adds a fstab entry
 # for persistence across reboots.
-# Usage: sudo sh setup-existing-disk.sh
+# Usage: sh setup-existing-disk.sh
 
 set -e
 
@@ -17,7 +17,7 @@ lsblk -lnpo NAME,SIZE,TYPE,FSTYPE | while read -r part size type fstype; do
       continue
     fi
 
-    uuid=$(sudo blkid -s UUID -o value "$part" 2>/dev/null || true)
+    uuid=$(blkid -s UUID -o value "$part" 2>/dev/null || true)
     if [ -n "$uuid" ]; then
       printf '%s %s %s %s\n' "$part" "$size" "$fstype" "$uuid"
     fi
@@ -119,10 +119,10 @@ esac
 # Mount the selected partition and persist in fstab.
 echo ""
 echo "Mounting $PARTITION at $MOUNT_POINT..."
-sudo mkdir -p "$MOUNT_POINT"
-sudo mount -t "$FS_TYPE" "$PARTITION" "$MOUNT_POINT"
+mkdir -p "$MOUNT_POINT"
+mount -t "$FS_TYPE" "$PARTITION" "$MOUNT_POINT"
 
-echo "UUID=$UUID $MOUNT_POINT $FS_TYPE defaults 0 0" | sudo tee -a /etc/fstab >/dev/null
+echo "UUID=$UUID $MOUNT_POINT $FS_TYPE defaults 0 0" | tee -a /etc/fstab >/dev/null
 echo "Added to /etc/fstab (UUID=$UUID)"
 
 # Display status output after mounting.
