@@ -11,6 +11,7 @@ A collection of shell scripts for provisioning and configuring Red Hat Enterpris
 - [Scripts](#scripts)
   - [setup-docker.sh](#setup-dockersh)
   - [setup-dnf-automatic.sh](#setup-dnf-automaticsh)
+  - [setup-disk.sh](#setup-disksh)
 - [Notes](#notes)
 - [License](#license)
 
@@ -83,6 +84,38 @@ Configures unattended daily system updates using `dnf-automatic`.
 ```bash
 sudo bash scripts/rhel/setup-dnf-automatic.sh
 ```
+
+---
+
+### setup-disk.sh
+
+**Location:** `scripts/rhel/setup-disk.sh`
+
+Identifies unpartitioned disks, prompts to select one, creates a single XFS partition on a GPT partition table, mounts it at a user-specified path, and writes a UUID-based `/etc/fstab` entry so the mount persists across reboots.
+
+**What it does:**
+
+- Detects block devices with no existing partitions and presents them in a numbered list
+- Prompts to select a disk and validates the input
+- Prompts for an absolute mount point path and validates it is not already in use
+- Displays a summary and requires explicit `[y/N]` confirmation before any disk changes
+- Creates a GPT partition table and a single data partition (1 MiB aligned, full disk)
+- Formats the partition with XFS using `mkfs.xfs`
+- Creates the mount point directory, mounts the partition, and appends a UUID-based entry to `/etc/fstab`
+- Displays `lsblk`, `df -h`, and the fstab entry to confirm success
+
+**Usage:**
+
+```bash
+sudo sh scripts/rhel/setup-disk.sh
+```
+
+> **Note:** This script is fully interactive — it reads from the terminal. Piping it from `curl` will break the prompts. Download it first, then run it:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-disk.sh -o /tmp/setup-disk.sh
+> sudo sh /tmp/setup-disk.sh
+> ```
 
 ## Notes
 
