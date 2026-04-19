@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Update and upgrade the system
 sudo dnf -y update
