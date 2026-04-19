@@ -11,3 +11,9 @@ sudo sed -i 's/^apply_updates = .*/apply_updates = yes/' /etc/dnf/automatic.conf
 
 # Enable and start the dnf-automatic timer to run daily
 sudo systemctl enable --now dnf-automatic.timer
+if sudo systemctl is-active --quiet dnf-automatic.timer; then
+  echo "dnf-automatic timer is enabled and running"
+else
+  echo "Failed to start dnf-automatic timer"
+  exit 1
+fi
