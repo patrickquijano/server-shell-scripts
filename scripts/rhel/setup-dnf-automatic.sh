@@ -24,7 +24,7 @@ echo "Current upgrade_type: $current_upgrade_type"
 printf 'Set upgrade_type to "default"? [y/N] '
 read -r reply
 case "$reply" in
-([Yy])
+[Yy])
   sed -i 's/^upgrade_type = .*/upgrade_type = default/' /etc/dnf/automatic.conf
   new_upgrade_type=$(grep '^upgrade_type' /etc/dnf/automatic.conf | sed 's/.*= //')
   if [ "$new_upgrade_type" != "$current_upgrade_type" ]; then
@@ -42,7 +42,7 @@ echo "Current apply_updates: $current_apply_updates"
 printf 'Set apply_updates to "yes"? [y/N] '
 read -r reply
 case "$reply" in
-([Yy])
+[Yy])
   sed -i 's/^apply_updates = .*/apply_updates = yes/' /etc/dnf/automatic.conf
   new_apply_updates=$(grep '^apply_updates' /etc/dnf/automatic.conf | sed 's/.*= //')
   if [ "$new_apply_updates" != "$current_apply_updates" ]; then
