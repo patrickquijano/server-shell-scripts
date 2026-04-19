@@ -2,9 +2,15 @@
 # Prompts to select an unpartitioned disk, creates a GPT partition with XFS
 # filesystem, mounts it at a user-specified path, and adds a fstab entry for
 # persistence across reboots.
-# Usage: sudo sh setup-new-disk.sh
+# Usage: sh setup-new-disk.sh
 
 set -e
+
+# Ensure the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+  echo "Error: this script must be run as root (use sudo)" >&2
+  exit 1
+fi
 
 # Create a temporary file to store the list of unpartitioned disks
 DISK_LIST=$(mktemp)
@@ -95,10 +101,10 @@ esac
 # Create a GPT partition table on the selected disk, create a single partition, and format it with XFS
 echo ""
 echo "Creating GPT partition table on $DISK..."
-sudo parted -s "$DISK" mklabel gpt
-sudo parted -s "$DISK" mkpart data 1MiB 100%
-sudo partprobe "$DISK"
-sudo udevadm settle
+parted -s "$DISK" mklabel gpt
+parted -s "$DISK" mkpart data 1MiB 100%
+partprobe "$DISK"
+udevadm settle
 
 # Find the name of the new partition (e.g. /dev/sdb1) by listing the partitions on the disk and filtering out the disk itself
 PART_NAME=$(lsblk -lno NAME "$DISK" | grep -v "^$(basename "$DISK")$" | head -n 1)
@@ -110,20 +116,20 @@ PARTITION="/dev/$PART_NAME"
 
 # Wait for the partition to be recognized by the system
 echo "Formatting $PARTITION with XFS..."
-sudo mkfs.xfs "$PARTITION"
+mkfs.xfs "$PARTITION"
 
 # Mount the new partition at the specified mount point and add an entry to /etc/fstab for persistence across reboots
 echo "Mounting $PARTITION at $MOUNT_POINT..."
-sudo mkdir -p "$MOUNT_POINT"
-sudo mount "$PARTITION" "$MOUNT_POINT"
+mkdir -p "$MOUNT_POINT"
+mount "$PARTITION" "$MOUNT_POINT"
 
 # Get the UUID of the new partition and add an entry to /etc/fstab
-UUID=$(sudo blkid -s UUID -o value "$PARTITION")
+UUID=$(blkid -s UUID -o value "$PARTITION")
 if [ -z "$UUID" ]; then
   echo "Error: could not read UUID of $PARTITION" >&2
   exit 1
 fi
-echo "UUID=$UUID $MOUNT_POINT xfs defaults 0 0" | sudo tee -a /etc/fstab >/dev/null
+echo "UUID=$UUID $MOUNT_POINT xfs defaults 0 0" | tee -a /etc/fstab >/dev/null
 echo "Added to /etc/fstab (UUID=$UUID)"
 
 # Display the status of the new disk, including the partition layout, mount point, and fstab entry
