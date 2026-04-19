@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # Update and upgrade the system
 sudo dnf -y update
 sudo dnf -y upgrade
@@ -40,6 +42,6 @@ sudo systemctl enable --now dnf-automatic.timer
 if sudo systemctl is-active --quiet dnf-automatic.timer; then
   echo "dnf-automatic timer is enabled and running"
 else
-  echo "Failed to start dnf-automatic timer"
+  echo "Failed to start dnf-automatic timer" >&2
   exit 1
 fi

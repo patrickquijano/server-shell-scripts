@@ -75,9 +75,7 @@ Configures unattended daily system updates using `dnf-automatic`.
 
 - Updates and upgrades all system packages via `dnf`
 - Installs the `dnf-automatic` package
-- Configures `/etc/dnf/automatic.conf`:
-  - `upgrade_type = default` — applies all available updates
-  - `apply_updates = yes` — updates are applied automatically without manual intervention
+- Reads the current `upgrade_type` and `apply_updates` values from `/etc/dnf/automatic.conf` and prompts `[y/N]` to set each to `default` / `yes` respectively
 - Enables and starts the `dnf-automatic.timer` systemd unit to run daily
 
 **Usage:**

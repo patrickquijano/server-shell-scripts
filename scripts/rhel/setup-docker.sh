@@ -16,7 +16,7 @@ TARGET_USER="$1"
 
 # Check if the specified user exists
 if ! id "$TARGET_USER" >/dev/null 2>&1; then
-  echo "Error: user '$TARGET_USER' does not exist"
+  echo "Error: user '$TARGET_USER' does not exist" >&2
   exit 1
 fi
 
@@ -30,7 +30,7 @@ sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker
 sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin container-selinux
 
 # Add the docker group if it does not exist
-if ! getent group docker; then
+if ! getent group docker >/dev/null 2>&1; then
   sudo groupadd docker
 fi
 
@@ -82,7 +82,7 @@ sudo systemctl enable --now docker
 if sudo systemctl is-active --quiet docker; then
   echo "Docker service is enabled and running"
 else
-  echo "Failed to start Docker service"
+  echo "Failed to start Docker service" >&2
   exit 1
 fi
 
@@ -91,6 +91,6 @@ sudo systemctl enable --now containerd
 if sudo systemctl is-active --quiet containerd; then
   echo "containerd service is enabled and running"
 else
-  echo "Failed to start containerd service"
+  echo "Failed to start containerd service" >&2
   exit 1
 fi
