@@ -54,6 +54,8 @@ Scripts can also be executed remotely without cloning:
 curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-docker.sh | sudo sh -s -- <username>
 ```
 
+`sh -s` reads from stdin; `--` ends sh's own options so `<username>` reaches `$1` inside the script.
+
 ## Script Conventions
 
 - Start with `#!/bin/sh` and `set -e` — all scripts exit immediately on any error.
@@ -62,7 +64,85 @@ curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts
 - Service management uses `systemctl enable --now <service>` followed by an `is-active` check with a clear success/failure message and `exit 1` on failure.
 - Before overwriting existing config files (e.g., `/etc/docker/daemon.json`), the script displays the current contents and prompts the user with `[y/N]`.
 - Arguments are validated at the top of the script before any system changes.
+- Error messages use `echo "Error: ..." >&2` (stderr); success messages go to stdout.
 
-## Code Style
+## Canonical Patterns
+
+**Argument validation** (count check first, then semantic):
+
+```sh
+if [ "$#" -lt 1 ]; then
+  echo "Usage: $(basename "$0") <username>"
+  exit 1
+fi
+TARGET_USER="$1"
+if ! id "$TARGET_USER" >/dev/null 2>&1; then
+  echo "Error: user '$TARGET_USER' does not exist" >&2
+  exit 1
+fi
+```
+
+**Group existence check** (use `getent`, not `grep /etc/group`):
+
+```sh
+if ! getent group docker >/dev/null 2>&1; then
+  sudo groupadd docker
+fi
+```
+
+**Write a privileged config file** (`sudo` cannot own `>` redirects — always use `tee`):
+
+```sh
+sudo tee /etc/path/file.conf >/dev/null <<EOF
+content here
+EOF
+```
+
+**Interactive overwrite prompt** (use `case`, not `if [ "$reply" = y ]`):
+
+```sh
+if [ -f /etc/path/file.conf ]; then
+  echo "Existing /etc/path/file.conf:"
+  cat /etc/path/file.conf
+  printf 'Overwrite? [y/N] '
+  read -r reply
+  case "$reply" in
+    [Yy]) ;;
+    *) echo "Skipping"; exit 0 ;;
+  esac
+fi
+```
+
+**Service enable + validate**:
+
+```sh
+sudo systemctl enable --now docker
+if sudo systemctl is-active --quiet docker; then
+  echo "docker is enabled and running"
+else
+  echo "Failed to start docker" >&2
+  exit 1
+fi
+```
+
+## Code Style & POSIX sh Constraints
 
 Follows `.editorconfig`: 2-space indentation, LF line endings, UTF-8. Shell scripts use `[ ]` for conditionals (POSIX sh) and `"$VAR"` quoting throughout.
+
+These are **forbidden** in POSIX sh:
+
+- `[[ ]]`, `=~`, `(( ))` — use `[ ]` and `case` instead
+- `read -p "prompt"` — use `printf 'prompt '` then `read -r var`
+- `&>` or `>&` combined redirects — use `>/dev/null 2>&1`
+- Arrays (`arr=()`, `${arr[@]}`) — use positional parameters or temp files
+- `${var//x/y}` string substitution — use `sed` or `case` instead
+
+## Testing
+
+Scripts require a real RHEL-compatible environment — `shellcheck` catches syntax but cannot validate `dnf`, `systemctl`, or `groupadd` behavior. For local testing use a container:
+
+```bash
+docker run --rm -it rockylinux:9 bash
+```
+
+`shellcheck -s sh scripts/rhel/*.sh` should pass with zero warnings before committing.
