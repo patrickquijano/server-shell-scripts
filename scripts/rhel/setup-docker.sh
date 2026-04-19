@@ -37,7 +37,7 @@ fi
 # Add the specified user to the docker group
 sudo usermod -aG docker "$TARGET_USER"
 
-# Configure Docker daemon to use systemd as the cgroup driver and set log rotation options
+# Check the current contents of /etc/docker/daemon.json and prompt the user to replace it if it already exists
 if [ -f /etc/docker/daemon.json ]; then
   echo "Existing /etc/docker/daemon.json found:"
   cat /etc/docker/daemon.json
