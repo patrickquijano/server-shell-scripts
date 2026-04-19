@@ -7,7 +7,6 @@ A collection of shell scripts for provisioning and configuring Red Hat Enterpris
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
 - [Scripts](#scripts)
   - [setup-docker.sh](#setup-dockersh)
   - [setup-dnf-automatic.sh](#setup-dnf-automaticsh)
@@ -22,19 +21,7 @@ A collection of shell scripts for provisioning and configuring Red Hat Enterpris
 - `sudo` or root access
 - `dnf` package manager
 
-## Quick Start
-
-Run a script directly from the repository without cloning it first:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-docker.sh | sudo bash -s -- <username>
-```
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-dnf-automatic.sh | sudo bash
-```
-
-> **Tip:** Review the script contents before piping to a shell — visit the raw URL in a browser or run `curl -fsSL <url>` without `| sudo bash` first.
+> **Tip:** Review the script contents before piping to a shell — visit the raw URL in a browser or run `curl -fsSL <url>` without `| sudo sh` first.
 
 ## Scripts
 
@@ -60,10 +47,16 @@ Installs Docker CE and related tooling on a RHEL system with a production-ready 
 **Usage:**
 
 ```bash
-sudo bash scripts/rhel/setup-docker.sh <username>
+sudo sh scripts/rhel/setup-docker.sh <username>
 # Example:
-sudo bash scripts/rhel/setup-docker.sh azureuser
+sudo sh scripts/rhel/setup-docker.sh azureuser
 ```
+
+> **Note:** This script is fully interactive — it reads from the terminal. Piping it from `curl` will break the prompts. Download it first, then run it:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-docker.sh.sh -o /tmp/setup-docker.sh.sh && sudo sh /tmp/setup-docker.sh.sh $USER
+> ```
 
 ---
 
@@ -83,8 +76,14 @@ Configures unattended daily system updates using `dnf-automatic`.
 **Usage:**
 
 ```bash
-sudo bash scripts/rhel/setup-dnf-automatic.sh
+sudo sh scripts/rhel/setup-dnf-automatic.sh
 ```
+
+> **Note:** This script is fully interactive — it reads from the terminal. Piping it from `curl` will break the prompts. Download it first, then run it:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-dnf-automatic.sh -o /tmp/setup-dnf-automatic.sh && sudo sh /tmp/setup-dnf-automatic.sh
+> ```
 
 ---
 
@@ -114,8 +113,7 @@ sudo sh scripts/rhel/setup-new-disk.sh
 > **Note:** This script is fully interactive — it reads from the terminal. Piping it from `curl` will break the prompts. Download it first, then run it:
 >
 > ```bash
-> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-new-disk.sh -o /tmp/setup-new-disk.sh
-> sudo sh /tmp/setup-new-disk.sh
+> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-new-disk.sh -o /tmp/setup-new-disk.sh && sudo sh /tmp/setup-new-disk.sh
 > ```
 
 ---
@@ -145,8 +143,7 @@ sudo sh scripts/rhel/setup-existing-disk.sh
 > **Note:** This script is fully interactive — it reads from the terminal. Piping it from `curl` will break the prompts. Download it first, then run it:
 >
 > ```bash
-> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-existing-disk.sh -o /tmp/setup-existing-disk.sh
-> sudo sh /tmp/setup-existing-disk.sh
+> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-existing-disk.sh -o /tmp/setup-existing-disk.sh && sudo sh /tmp/setup-existing-disk.sh
 > ```
 
 ## Notes
