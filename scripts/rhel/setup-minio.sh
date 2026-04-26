@@ -6,6 +6,11 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+# sudo's secure_path on RHEL omits /usr/local/bin; ensure it is present so that
+# the minio and mc binaries installed there are reachable throughout the script.
+PATH="/usr/local/bin:/usr/local/sbin:$PATH"
+export PATH
+
 if [ ! -f /etc/os-release ]; then
   echo "Error: /etc/os-release not found — this script requires a RHEL-compatible system" >&2
   exit 1
@@ -110,16 +115,13 @@ fi
 
 # --- Installation summary ---
 echo ""
-echo "=== MinIO AIStor Installation Summary ==="
+echo "=== MinIO Installation Summary ==="
 printf 'RHEL version:    %s\n' "$RHEL_MAJOR"
 printf 'Architecture:    %s\n' "$ARCH_RAW"
 printf 'Data directory:  %s\n' "$DATA_DIR"
 printf 'Admin user:      %s\n' "$ROOT_USER"
 printf 'API port:        9000\n'
 printf 'Console port:    9001\n'
-echo ""
-echo "NOTE: A free AIStor license must be registered after install"
-echo "      to enable S3 operations. Run: mc license register minio-local"
 echo ""
 
 printf 'Proceed with installation? [y/N] '
@@ -138,16 +140,16 @@ echo "Updating system packages..."
 sudo dnf -y update
 sudo dnf -y upgrade
 
-# --- Download and install MinIO AIStor RPM ---
+# --- Download and install MinIO RPM ---
 RPM_FILE=$(mktemp /tmp/minio-XXXXXX.rpm)
 trap 'rm -f "$RPM_FILE"' EXIT
 
-RPM_URL="https://dl.min.io/aistor/minio/release/linux-${ARCH}/minio.rpm"
-echo "Downloading MinIO AIStor (linux-${ARCH})..."
+RPM_URL="https://dl.min.io/server/minio/release/linux-${ARCH}/minio.rpm"
+echo "Downloading MinIO (linux-${ARCH})..."
 curl --fail --silent --show-error --location --progress-bar \
   "$RPM_URL" --output "$RPM_FILE"
 
-echo "Installing MinIO AIStor RPM..."
+echo "Installing MinIO RPM..."
 sudo dnf -y install "$RPM_FILE"
 
 echo "Installed: $(minio --version)"
@@ -179,8 +181,7 @@ fi
 
 if [ "$WRITE_ENV" -eq 1 ]; then
   {
-    printf '# MinIO AIStor environment configuration\n'
-    printf '# See: https://docs.min.io/enterprise/aistor-object-store/\n'
+    printf '# MinIO environment configuration\n'
     printf '\n'
     printf '# Storage backend\n'
     printf 'MINIO_VOLUMES="%s"\n' "$DATA_DIR"
@@ -191,9 +192,6 @@ if [ "$WRITE_ENV" -eq 1 ]; then
     printf '\n'
     printf '# Fix the web console on port 9001\n'
     printf 'MINIO_CONSOLE_ADDRESS=":9001"\n'
-    printf '\n'
-    printf '# AIStor license (register after install: mc license register minio-local)\n'
-    printf '# MINIO_LICENSE="/opt/minio/minio.license"\n'
   } | sudo tee /etc/default/minio >/dev/null
   echo "/etc/default/minio written."
 fi
@@ -226,7 +224,7 @@ fi
 MC_FILE=$(mktemp /tmp/mc-XXXXXX)
 trap 'rm -f "$RPM_FILE" "$MC_FILE"' EXIT
 
-MC_URL="https://dl.min.io/aistor/mc/release/linux-${ARCH}/mc"
+MC_URL="https://dl.min.io/client/mc/release/linux-${ARCH}/mc"
 echo "Downloading mc client (linux-${ARCH})..."
 curl --fail --silent --show-error --location --progress-bar \
   "$MC_URL" --output "$MC_FILE"
@@ -257,7 +255,7 @@ fi
 mc alias set minio-local "http://127.0.0.1:9000" "$ROOT_USER" "$ROOT_PASSWORD" >/dev/null
 
 if mc admin info minio-local >/dev/null 2>&1; then
-  echo "MinIO AIStor is healthy and accepting admin commands."
+  echo "MinIO is healthy and accepting admin commands."
 else
   echo "Warning: mc admin info failed — server may still be initializing." >&2
   echo "Run manually: mc admin info minio-local" >&2
@@ -266,13 +264,11 @@ fi
 # --- Post-install summary ---
 SERVER_IP=$(hostname -I | awk '{print $1}')
 echo ""
-echo "=== MinIO AIStor Installation Complete ==="
+echo "=== MinIO Installation Complete ==="
 printf 'API endpoint:    http://%s:9000\n' "$SERVER_IP"
 printf 'Console URL:     http://%s:9001\n' "$SERVER_IP"
 printf 'Admin user:      %s\n' "$ROOT_USER"
 printf 'Data directory:  %s\n' "$DATA_DIR"
 echo ""
-echo "IMPORTANT: S3 operations are blocked until a free license is registered."
-echo "  Register now:   mc license register minio-local"
 echo "  Service logs:   journalctl -u minio"
 echo "  Service status: systemctl status minio"
