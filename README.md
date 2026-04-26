@@ -14,6 +14,7 @@ A collection of shell scripts for provisioning and configuring Red Hat Enterpris
   - [setup-existing-disk.sh](#setup-existing-disksh)
   - [setup-postgresql.sh](#setup-postgresqlsh)
   - [setup-minio.sh](#setup-miniosh)
+  - [setup-redis.sh](#setup-redissh)
 - [Notes](#notes)
 - [License](#license)
 
@@ -223,6 +224,38 @@ sudo sh scripts/rhel/setup-minio.sh
 > curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-minio.sh -o /tmp/setup-minio.sh && sudo sh /tmp/setup-minio.sh
 > ```
 
+### setup-redis.sh
+
+**Location:** `scripts/rhel/setup-redis.sh`
+
+Installs the latest stable Redis server from the official Redis repository on a RHEL system, configures it for network access with password authentication, and validates the installation.
+
+**What it does:**
+
+- Detects the RHEL major version (8 or 9) at runtime; exits with an error on unsupported versions
+- Prompts for a Redis password (input is hidden; confirmation required; minimum 8 characters; no spaces or `#` characters)
+- Displays an installation summary and requires explicit `[y/N]` confirmation before any changes
+- Updates and upgrades all system packages via `dnf`
+- Imports the official Redis GPG key from `packages.redis.io`
+- Writes `/etc/yum.repos.d/redis.repo` pointing to the official Redis repository — prompts before overwriting if the file already exists
+- Installs the `redis` package from the official Redis repository
+- Configures `/etc/redis/redis.conf` to bind on all interfaces (`0.0.0.0`) and sets `requirepass` to the provided password
+- Opens port 6379 via `firewall-cmd` if `firewalld` is active; prints a manual reminder otherwise
+- Enables and starts the `redis` systemd service
+- Validates the installation with `redis-cli ping` and prints the server endpoint
+
+**Usage:**
+
+```bash
+sudo sh scripts/rhel/setup-redis.sh
+```
+
+> **Note:** This script is fully interactive — it reads from the terminal. Piping it from `curl` will break the prompts. Download it first, then run it:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-redis.sh -o /tmp/setup-redis.sh && sudo sh /tmp/setup-redis.sh
+> ```
+
 ## Notes
 
 - **Both scripts are independent and complementary.** Run both to get a fully configured Docker host with automatic system updates.
@@ -230,6 +263,7 @@ sudo sh scripts/rhel/setup-minio.sh
 - **daemon.json prompt** — if `/etc/docker/daemon.json` already exists when `setup-docker.sh` is run, the script will display the current contents and ask whether to overwrite it. Answering `N` skips the update and leaves the existing configuration in place.
 - **System update on every run** — both scripts begin with a full `dnf update && dnf upgrade`, so they may take several minutes on a freshly provisioned system.
 - **MinIO community edition** — `setup-minio.sh` installs the open-source community MinIO server (`AGPL-3.0`). No license registration is required.
+- **Redis RHEL compatibility** — `setup-redis.sh` uses the official Redis repository (`packages.redis.io`) which supports RHEL 8 and 9 only. RHEL 10 is not yet supported by the upstream Redis RPM repository.
 
 ## License
 
