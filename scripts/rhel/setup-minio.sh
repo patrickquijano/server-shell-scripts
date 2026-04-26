@@ -6,6 +6,11 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+# sudo's secure_path on RHEL omits /usr/local/bin; ensure it is present so that
+# the minio and mc binaries installed there are reachable throughout the script.
+PATH="/usr/local/bin:/usr/local/sbin:$PATH"
+export PATH
+
 if [ ! -f /etc/os-release ]; then
   echo "Error: /etc/os-release not found — this script requires a RHEL-compatible system" >&2
   exit 1
