@@ -13,6 +13,7 @@ A collection of shell scripts for provisioning and configuring Red Hat Enterpris
   - [setup-new-disk.sh](#setup-new-disksh)
   - [setup-existing-disk.sh](#setup-existing-disksh)
   - [setup-postgresql.sh](#setup-postgresqlsh)
+  - [setup-minio.sh](#setup-miniosh)
 - [Notes](#notes)
 - [License](#license)
 
@@ -186,12 +187,49 @@ sudo sh scripts/rhel/setup-postgresql.sh
 > curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-postgresql.sh -o /tmp/setup-postgresql.sh && sudo sh /tmp/setup-postgresql.sh
 > ```
 
+---
+
+### setup-minio.sh
+
+**Location:** `scripts/rhel/setup-minio.sh`
+
+Installs MinIO AIStor server (self-hosted S3-compatible object storage) on a RHEL system, configures it as a systemd service, and validates the installation.
+
+**What it does:**
+
+- Detects the RHEL major version (8, 9, or 10) and CPU architecture at runtime
+- Prompts for the data directory, defaulting to `/var/lib/minio/data`
+- Prompts for the admin username (default: `minioadmin`) and password (input is hidden; confirmation required; minimum 8 characters)
+- Displays an installation summary and requires explicit `[y/N]` confirmation before any changes
+- Updates and upgrades all system packages via `dnf`
+- Downloads and installs the latest MinIO AIStor RPM from `dl.min.io/aistor` for the detected architecture
+- Creates the data directory if it does not exist and sets ownership to `minio-user:minio-user`
+- Writes `/etc/default/minio` with `MINIO_VOLUMES`, `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, and `MINIO_CONSOLE_ADDRESS=":9001"` — prompts before overwriting if the file already exists
+- Opens ports 9000 (API) and 9001 (Console) via `firewall-cmd` if `firewalld` is active
+- Enables and starts the `minio` systemd service
+- Downloads the `mc` (MinIO Client) binary from `dl.min.io/aistor` and installs it to `/usr/local/bin/mc`
+- Waits for the MinIO health endpoint to respond, then validates with `mc admin info`
+- Prints the API endpoint, Console URL, and instructions to register a free AIStor license
+
+**Usage:**
+
+```bash
+sudo sh scripts/rhel/setup-minio.sh
+```
+
+> **Note:** This script is fully interactive — it reads from the terminal. Piping it from `curl` will break the prompts. Download it first, then run it:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-minio.sh -o /tmp/setup-minio.sh && sudo sh /tmp/setup-minio.sh
+> ```
+
 ## Notes
 
 - **Both scripts are independent and complementary.** Run both to get a fully configured Docker host with automatic system updates.
 - **Docker group membership** — `setup-docker.sh` accepts a required `<username>` argument and adds that user to the `docker` group so Docker commands can be run without `sudo`. You may need to log out and back in for this to take effect in new terminal sessions.
 - **daemon.json prompt** — if `/etc/docker/daemon.json` already exists when `setup-docker.sh` is run, the script will display the current contents and ask whether to overwrite it. Answering `N` skips the update and leaves the existing configuration in place.
 - **System update on every run** — both scripts begin with a full `dnf update && dnf upgrade`, so they may take several minutes on a freshly provisioned system.
+- **AIStor free license** — `setup-minio.sh` installs MinIO AIStor, which requires a free license registration before S3 operations are available. After installation, run `mc license register minio-local` to register. Single-node single-drive deployments qualify for the free tier.
 
 ## License
 
