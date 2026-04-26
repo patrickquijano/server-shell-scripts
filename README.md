@@ -12,12 +12,13 @@ A collection of shell scripts for provisioning and configuring Red Hat Enterpris
   - [setup-dnf-automatic.sh](#setup-dnf-automaticsh)
   - [setup-new-disk.sh](#setup-new-disksh)
   - [setup-existing-disk.sh](#setup-existing-disksh)
+  - [setup-postgresql.sh](#setup-postgresqlsh)
 - [Notes](#notes)
 - [License](#license)
 
 ## Prerequisites
 
-- RHEL 8/9 or a compatible distribution (Rocky Linux, AlmaLinux, etc.)
+- RHEL 8/9/10 or a compatible distribution (Rocky Linux, AlmaLinux, etc.)
 - `sudo` or root access
 - `dnf` package manager
 
@@ -144,6 +145,45 @@ sudo sh scripts/rhel/setup-existing-disk.sh
 >
 > ```bash
 > curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-existing-disk.sh -o /tmp/setup-existing-disk.sh && sudo sh /tmp/setup-existing-disk.sh
+> ```
+
+---
+
+### setup-postgresql.sh
+
+**Location:** `scripts/rhel/setup-postgresql.sh`
+
+Installs a user-selected PostgreSQL version from the official PGDG repository on a RHEL system, initializes the database cluster at a configurable data directory, sets the `postgres` superuser password, and validates connectivity.
+
+**What it does:**
+
+- Detects the RHEL major version (8, 9, or 10) and CPU architecture at runtime
+- Presents a numbered list of available PostgreSQL versions for the detected OS:
+  - RHEL 8/9: PostgreSQL 14, 15, 16, 17
+  - RHEL 10: PostgreSQL 16, 17
+- Prompts for the data directory (PGDATA), defaulting to `/var/lib/pgsql/<version>/data`
+- Prompts for the `postgres` superuser password (input is hidden; confirmation required)
+- Displays an installation summary and requires explicit `[y/N]` confirmation before any changes
+- Updates and upgrades all system packages via `dnf`
+- Installs the official PGDG repository RPM for the detected OS and architecture
+- Disables the built-in AppStream `postgresql` module to prevent version conflicts
+- Installs `postgresql<version>-server` from the PGDG repository
+- When a non-default PGDATA is chosen: creates the directory with `postgres:postgres` ownership and `700` permissions, writes a systemd drop-in override at `/etc/systemd/system/postgresql-<version>.service.d/pgdata.conf`, and reloads systemd
+- Initializes the cluster using `/usr/pgsql-<version>/bin/postgresql-<version>-setup initdb`
+- Enables and starts the `postgresql-<version>` systemd service
+- Sets the `postgres` superuser password via `ALTER ROLE postgres WITH PASSWORD '...'`
+- Validates cluster connectivity with `SELECT version()` and prints the final service status
+
+**Usage:**
+
+```bash
+sudo sh scripts/rhel/setup-postgresql.sh
+```
+
+> **Note:** This script is fully interactive — it reads from the terminal. Piping it from `curl` will break the prompts. Download it first, then run it:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/patrickquijano/server-shell-scripts/main/scripts/rhel/setup-postgresql.sh -o /tmp/setup-postgresql.sh && sudo sh /tmp/setup-postgresql.sh
 > ```
 
 ## Notes
