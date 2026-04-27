@@ -237,7 +237,7 @@ Installs the latest stable Redis server from the official Redis repository on a 
 - Displays an installation summary and requires explicit `[y/N]` confirmation before any changes
 - Updates and upgrades all system packages via `dnf`
 - On RHEL 8/9: imports the official Redis GPG key from `packages.redis.io`, writes `/etc/yum.repos.d/redis.repo` — prompts before overwriting if the file already exists — and installs the latest stable `redis` package from the official Redis repository
-- On RHEL 10: installs `redis` directly from the RHEL AppStream
+- On RHEL 10: installs `valkey` from the RHEL AppStream — Valkey is the protocol-compatible open-source Redis fork shipped in EL-10 following the Redis license change
 - Configures `/etc/redis/redis.conf` to bind on all interfaces (`0.0.0.0`) and sets `requirepass` to the provided password
 - Opens port 6379 via `firewall-cmd` if `firewalld` is active; prints a manual reminder otherwise
 - Enables and starts the `redis` systemd service
@@ -262,7 +262,7 @@ sudo sh scripts/rhel/setup-redis.sh
 - **daemon.json prompt** — if `/etc/docker/daemon.json` already exists when `setup-docker.sh` is run, the script will display the current contents and ask whether to overwrite it. Answering `N` skips the update and leaves the existing configuration in place.
 - **System update on every run** — both scripts begin with a full `dnf update && dnf upgrade`, so they may take several minutes on a freshly provisioned system.
 - **MinIO community edition** — `setup-minio.sh` installs the open-source community MinIO server (`AGPL-3.0`). No license registration is required.
-- **Redis repository source** — `setup-redis.sh` uses the official Redis repository (`packages.redis.io`) on RHEL 8 and 9 for the latest stable release, and falls back to the RHEL AppStream on RHEL 10.
+- **Redis repository source** — `setup-redis.sh` uses the official Redis repository (`packages.redis.io`) on RHEL 8 and 9 for the latest stable release. On RHEL 10, it installs `valkey` from the RHEL AppStream instead — Redis is not available on EL-10 due to a license change and was replaced by Valkey, a protocol-compatible open-source fork.
 
 ## License
 
