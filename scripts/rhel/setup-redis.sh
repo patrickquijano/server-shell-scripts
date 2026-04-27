@@ -15,10 +15,9 @@ fi
 RHEL_MAJOR=$(. /etc/os-release && printf '%s' "$VERSION_ID" | cut -d. -f1)
 
 case "$RHEL_MAJOR" in
-  8|9) ;;
+  8|9|10) ;;
   *)
-    echo "Error: unsupported RHEL major version '$RHEL_MAJOR'" >&2
-    echo "  The official Redis repository (packages.redis.io) supports RHEL 8 and 9 only." >&2
+    echo "Error: unsupported RHEL major version '$RHEL_MAJOR' (supported: 8, 9, 10)" >&2
     exit 1
     ;;
 esac
@@ -71,10 +70,15 @@ if [ "$REDIS_PASSWORD" != "$REDIS_PASSWORD_CONFIRM" ]; then
 fi
 
 # --- Installation summary ---
+case "$RHEL_MAJOR" in
+  8|9) REPO_SOURCE="packages.redis.io/rpm/rockylinux${RHEL_MAJOR}" ;;
+  10)  REPO_SOURCE="RHEL AppStream" ;;
+esac
+
 echo ""
 echo "=== Redis Installation Summary ==="
 printf 'RHEL version:   %s\n' "$RHEL_MAJOR"
-printf 'Repository:     packages.redis.io/rpm/rockylinux%s\n' "$RHEL_MAJOR"
+printf 'Repository:     %s\n' "$REPO_SOURCE"
 printf 'Bind address:   0.0.0.0\n'
 printf 'Port:           6379\n'
 echo ""
@@ -95,50 +99,62 @@ echo "==> Updating system packages..."
 dnf -y update
 dnf -y upgrade
 
-# --- Import Redis GPG key ---
-echo ""
-echo "==> Importing Redis GPG key..."
-KEY_FILE=$(mktemp /tmp/redis-key-XXXXXX.gpg)
-trap 'rm -f "$KEY_FILE"' EXIT
+case "$RHEL_MAJOR" in
+  8|9)
+    # --- Import Redis GPG key ---
+    echo ""
+    echo "==> Importing Redis GPG key..."
+    KEY_FILE=$(mktemp /tmp/redis-key-XXXXXX.gpg)
+    trap 'rm -f "$KEY_FILE"' EXIT
 
-curl --fail --silent --show-error --location \
-  "https://packages.redis.io/gpg" --output "$KEY_FILE"
-rpm --import "$KEY_FILE"
-echo "Redis GPG key imported."
+    curl --fail --silent --show-error --location \
+      "https://packages.redis.io/gpg" --output "$KEY_FILE"
+    rpm --import "$KEY_FILE"
+    echo "Redis GPG key imported."
 
-# --- Write /etc/yum.repos.d/redis.repo ---
-echo ""
-echo "==> Configuring Redis repository..."
-WRITE_REPO=1
-if [ -f /etc/yum.repos.d/redis.repo ]; then
-  echo "Existing /etc/yum.repos.d/redis.repo:"
-  cat /etc/yum.repos.d/redis.repo
-  printf 'Overwrite? [y/N] '
-  read -r REPLY
-  case "$REPLY" in
-    [Yy]) ;;
-    *)
-      echo "Skipping /etc/yum.repos.d/redis.repo update."
-      WRITE_REPO=0
-      ;;
-  esac
-fi
+    # --- Write /etc/yum.repos.d/redis.repo ---
+    echo ""
+    echo "==> Configuring Redis repository..."
+    WRITE_REPO=1
+    if [ -f /etc/yum.repos.d/redis.repo ]; then
+      echo "Existing /etc/yum.repos.d/redis.repo:"
+      cat /etc/yum.repos.d/redis.repo
+      printf 'Overwrite? [y/N] '
+      read -r REPLY
+      case "$REPLY" in
+        [Yy]) ;;
+        *)
+          echo "Skipping /etc/yum.repos.d/redis.repo update."
+          WRITE_REPO=0
+          ;;
+      esac
+    fi
 
-if [ "$WRITE_REPO" -eq 1 ]; then
-  tee /etc/yum.repos.d/redis.repo >/dev/null <<EOF
+    if [ "$WRITE_REPO" -eq 1 ]; then
+      tee /etc/yum.repos.d/redis.repo >/dev/null <<EOF
 [Redis]
 name=Redis
 baseurl=http://packages.redis.io/rpm/rockylinux${RHEL_MAJOR}
 enabled=1
 gpgcheck=1
 EOF
-  echo "/etc/yum.repos.d/redis.repo written."
-fi
+      echo "/etc/yum.repos.d/redis.repo written."
+    fi
 
-# --- Install redis ---
-echo ""
-echo "==> Installing Redis..."
-dnf -y install redis
+    # --- Install redis ---
+    echo ""
+    echo "==> Installing Redis..."
+    dnf -y install redis
+    ;;
+
+  10)
+    # --- Install redis from AppStream ---
+    echo ""
+    echo "==> Installing Redis from AppStream..."
+    dnf -y install redis
+    ;;
+esac
+
 echo "Installed: $(redis-server --version)"
 
 # --- Configure /etc/redis/redis.conf ---
