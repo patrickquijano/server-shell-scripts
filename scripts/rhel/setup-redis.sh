@@ -22,6 +22,25 @@ case "$RHEL_MAJOR" in
     ;;
 esac
 
+# --- Per-version service/binary/config names ---
+# RHEL 10 ships Valkey (an open-source Redis fork) instead of Redis due to
+# the Redis license change; Valkey is protocol-compatible and uses identical
+# config directives.
+case "$RHEL_MAJOR" in
+  8|9)
+    SERVICE="redis"
+    CONF="/etc/redis/redis.conf"
+    CLI="redis-cli"
+    SERVER_BIN="redis-server"
+    ;;
+  10)
+    SERVICE="valkey"
+    CONF="/etc/valkey/valkey.conf"
+    CLI="valkey-cli"
+    SERVER_BIN="valkey-server"
+    ;;
+esac
+
 # --- Redis password ---
 if [ -t 0 ]; then
   stty -echo
@@ -72,7 +91,7 @@ fi
 # --- Installation summary ---
 case "$RHEL_MAJOR" in
   8|9) REPO_SOURCE="packages.redis.io/rpm/rockylinux${RHEL_MAJOR}" ;;
-  10)  REPO_SOURCE="RHEL AppStream" ;;
+  10)  REPO_SOURCE="RHEL AppStream (valkey)" ;;
 esac
 
 echo ""
@@ -148,20 +167,18 @@ EOF
     ;;
 
   10)
-    # --- Install redis from AppStream ---
+    # --- Install valkey from AppStream ---
     echo ""
-    echo "==> Installing Redis from AppStream..."
-    dnf -y install redis
+    echo "==> Installing Valkey from AppStream..."
+    dnf -y install valkey
     ;;
 esac
 
-echo "Installed: $(redis-server --version)"
+echo "Installed: $($SERVER_BIN --version)"
 
-# --- Configure /etc/redis/redis.conf ---
+# --- Configure $CONF ---
 echo ""
-echo "==> Configuring /etc/redis/redis.conf..."
-
-CONF="/etc/redis/redis.conf"
+echo "==> Configuring $CONF..."
 
 if [ ! -f "$CONF" ]; then
   echo "Error: $CONF not found after installation" >&2
@@ -195,30 +212,30 @@ fi
 
 # --- Enable and start service ---
 echo ""
-echo "==> Enabling and starting redis service..."
-systemctl enable --now redis
+echo "==> Enabling and starting $SERVICE service..."
+systemctl enable --now "$SERVICE"
 
-if systemctl is-active --quiet redis; then
-  echo "redis is enabled and running."
+if systemctl is-active --quiet "$SERVICE"; then
+  echo "$SERVICE is enabled and running."
 else
-  echo "Error: failed to start redis service." >&2
-  echo "Check logs with: journalctl -u redis" >&2
+  echo "Error: failed to start $SERVICE service." >&2
+  echo "Check logs with: journalctl -u $SERVICE" >&2
   exit 1
 fi
 
 # --- Validate ---
 echo ""
 echo "==> Validating installation..."
-if redis-cli --no-auth-warning -a "$REDIS_PASSWORD" ping | grep -q PONG; then
-  echo "Redis responded to PING with PONG — installation validated."
+if "$CLI" --no-auth-warning -a "$REDIS_PASSWORD" ping | grep -q PONG; then
+  echo "$SERVICE responded to PING with PONG — installation validated."
 else
-  echo "Error: redis-cli ping failed." >&2
-  echo "Check logs with: journalctl -u redis" >&2
+  echo "Error: $CLI ping failed." >&2
+  echo "Check logs with: journalctl -u $SERVICE" >&2
   exit 1
 fi
 
 # --- Post-install summary ---
-REDIS_VERSION=$(redis-server --version | awk '{print $3}' | sed 's/v=//')
+REDIS_VERSION=$($SERVER_BIN --version | awk '{print $3}' | sed 's/v=//')
 SERVER_IP=$(hostname -I | awk '{print $1}')
 echo ""
 echo "=== Redis Installation Complete ==="
@@ -226,5 +243,5 @@ printf 'Version:        %s\n' "$REDIS_VERSION"
 printf 'Endpoint:       %s:6379\n' "$SERVER_IP"
 printf 'Config:         %s\n' "$CONF"
 echo ""
-echo "  Service logs:   journalctl -u redis"
-echo "  Service status: systemctl status redis"
+echo "  Service logs:   journalctl -u $SERVICE"
+echo "  Service status: systemctl status $SERVICE"
